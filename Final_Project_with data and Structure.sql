@@ -1465,9 +1465,6 @@ create procedure Update_branch
 and define Exam date, start time and end time. 
 Students can see the exam and do it only on the specified tim*/
 
-
---------------------------------
-
 	CREATE OR ALTER  PROCEDURE SP_StudentExam
     @StudentID INT,
     @ExamID INT,
@@ -1545,52 +1542,89 @@ BEGIN
 END
 GO
 
----------------------------------------------------------------------------------------
-/*System should store students answer for the exam and 
-calculate the correct answers, 
-and calculate final result for the student in this course*/
-
---insert data Exam_Question
-INSERT INTO [Examination2].[dbo].[Exam_Question] ([Exam_ID], [Q_ID], [Q_Degree])
-VALUES 
-    (1, 1, 10), -- Example data row 1
-    (1, 2, 8),  -- Example data row 2
-    (1, 3, 9);  -- Example data row 3
 
 
---insert data Students_Answers
-INSERT INTO [Examination2].[dbo].[Students_Answers] ([Stud_ID], [Answer_ID])
-VALUES
-    (1, 101),
-    (2, 102),
-    (3, 103),
-    (4, 104),
-    (5, 105),
-    (6, 106),
-    (7, 107),
-    (8, 108),
-    (9, 109),
-    (10, 110);
 
---insert data Students_Answers
-INSERT INTO [Examination2].[dbo].[Final_Result] ([St_ID], [Crs_ID], [Result_ID])
-VALUES
-    (1, 101, 201),
-    (2, 102, 202),
-    (3, 103, 203),
-    (4, 104, 204),
-    (5, 105, 205),
-    (6, 106, 206),
-    (7, 107, 207),
-    (8, 108, 208),
-    (9, 109, 209),
-    (10, 110, 210);
+-- Creation Table StudentAnswer
+CREATE TABLE StudentAnswer (
+    Answer_ID INT primary key,
+    Student_ID INT,
+    Exam_ID INT,
+    Q_ID INT,
+    Student_Answer NVARCHAR(MAX),
+	IsCorrect int,
+    FOREIGN KEY (Student_ID) REFERENCES Students.Student(St_ID),
+    FOREIGN KEY (Exam_ID) REFERENCES Instructors.Exam(Exam_ID),
+    FOREIGN KEY (Q_ID) REFERENCES Instructors.Question(Q_ID)
+);
+GO
 
-CREATE OR ALTER PROCEDURE SP_calculateTotalDegree
-    @studentId INT,
-    @examId INT
+
+
+--This procedure used for insert Students answers into table StudentAnswer
+CREATE or alter PROCEDURE Students.InsertStudentAnswer
+    @Answer_ID INT,
+    @StudentID INT,
+    @ExamID INT,
+    @Q_ID INT,
+    @Student_Answer NVARCHAR(MAX),
+	@IScorrect int
 AS
 BEGIN
+    BEGIN TRY
+        INSERT INTO Students.StudentAnswer (Answer_ID,Student_ID, Exam_ID, Q_ID, Student_Answer,IsCorrect)
+        VALUES (@Answer_ID,@StudentID, @ExamID, @Q_ID, @Student_Answer,@IScorrect);
+
+        PRINT 'Answer inserted successfully.'
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000), @ErrorSeverity INT, @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END;
+GO
+
+
+--calling InsertStudentAnswer Procedure
+
+
+-- Inserting answers for Student 1 in Exam 1
+EXEC Students.InsertStudentAnswer @Answer_ID = 1, @StudentID = 1, @ExamID = 1, @Q_ID = 1, @Student_Answer = 'A database structured to recognize relations among stored items of information',@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 2, @StudentID = 1, @ExamID = 1, @Q_ID = 2, @Student_Answer = 'A unique identifier for a database record',@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 3, @StudentID = 1, @ExamID = 1, @Q_ID = 3, @Student_Answer = 'A standard language for accessing and manipulating databases',@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 4, @StudentID = 1, @ExamID = 1, @Q_ID = 4, @Student_Answer = 'False',@IScorrect =  0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 5, @StudentID = 1, @ExamID = 1, @Q_ID = 5, @Student_Answer = 'False',@IScorrect =  0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 6, @StudentID = 1, @ExamID = 1, @Q_ID = 6, @Student_Answer = 'True',@IScorrect =  0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 7, @StudentID = 1, @ExamID = 1, @Q_ID = 7, @Student_Answer = 'A primary key uniquely identifies each record in a database table, ensuring data integrity and enabling efficient access.',@IScorrect = 1 ;
+EXEC Students.InsertStudentAnswer @Answer_ID = 8, @StudentID = 1, @ExamID = 1, @Q_ID = 8, @Student_Answer = 'Relational databases support ACID properties, data integrity, and provide powerful querying capabilities with SQL.', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 9, @StudentID = 1, @ExamID = 1, @Q_ID = 9, @Student_Answer = 'An SQL query typically includes a SELECT clause to specify the columns, a FROM clause to specify the tables, and optionally WHERE, GROUP BY, HAVING, and ORDER BY clauses to filter, group, and sort the data.', @IScorrect = 1;
+
+-- Inserting answers for Student 2 in Exam 2
+EXEC Students.InsertStudentAnswer @Answer_ID = 10, @StudentID = 2, @ExamID = 2, @Q_ID = 10, @Student_Answer = 'A linear data structure that follows the LIFO principle', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 11, @StudentID = 2, @ExamID = 2, @Q_ID = 11, @Student_Answer = 'A linear data structure that follows the FIFO principle', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 12, @StudentID = 2, @ExamID = 2, @Q_ID = 12, @Student_Answer = 'A tree data structure in which each node has at most two children', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 13, @StudentID = 2, @ExamID = 2, @Q_ID = 13, @Student_Answer = 'False', @IScorrect = 0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 14, @StudentID = 2, @ExamID = 2, @Q_ID = 14, @Student_Answer = 'True', @IScorrect = 0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 15, @StudentID = 2, @ExamID = 2, @Q_ID = 15, @Student_Answer = 'True', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 16, @StudentID = 2, @ExamID = 2, @Q_ID = 16, @Student_Answer = 'A stack follows LIFO, while a queue follows FIFO.' ,@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 17, @StudentID = 2, @ExamID = 2, @Q_ID = 17, @Student_Answer = 'Each node has at most two children, left and right.', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 18, @StudentID = 2, @ExamID = 2, @Q_ID = 18, @Student_Answer = 'Function call management, expression evaluation, backtracking, etc.', @IScorrect = 1;
+
+
+
+
+
+
+
+--This procedure for calculate Student's Total Degree
+CREATE OR ALTER PROCEDURE Instructors.SP_calculateTotalDegree
+    @St_ID INT,
+    @Exam_ID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
     DECLARE @totalDegree DECIMAL(5, 2);
     DECLARE @obtainedDegree DECIMAL(5, 2);
     DECLARE @Percentage DECIMAL(5, 2);
@@ -1599,23 +1633,29 @@ BEGIN
     DECLARE @EndTime DATETIME;
 
     -- Calculate the total degree for the exam, excluding corrective questions with zero degrees
-    SELECT @totalDegree = SUM(Q.Degree)
-    FROM ExamQuestions Q
-    JOIN Exams E ON Q.ExamID = E.ExamID
-    WHERE Q.ExamID = @examId AND NOT (E.ExamType = 'Corrective' AND Q.Degree = 0);
+    SELECT @totalDegree = SUM(Q.[Q_Degree])
+    FROM Instructors.Exam_Question Q
+    WHERE Q.Exam_ID = @Exam_ID
+      AND NOT EXISTS (
+          SELECT 1
+          FROM Instructors.Exam E
+          WHERE E.Exam_ID = Q.Exam_ID
+            AND E.Exam_Type = 'Corrective'
+            AND Q.Q_Degree = 0
+      );
 
     -- Calculate the obtained degree from the StudentAnswers table
-    SELECT @obtainedDegree = SUM(Degree)
-    FROM StudentAnswers SA
-    WHERE SA.StudentExamID IN (
-        SELECT StudentExamID
-        FROM StudentExams
-        WHERE StudentID = @studentId AND ExamID = @examId
-    )
-    AND (SA.IsCorrect = 1 OR (SA.IsCorrect = 0 AND SA.Degree IS NOT NULL));
+    SELECT @obtainedDegree = SUM(CASE WHEN SA.IsCorrect = 1 THEN Q.Q_Degree ELSE 0 END)
+    FROM Students.StudentAnswer SA
+    JOIN Instructors.Question Q ON SA.Q_ID = Q.Q_ID
+    WHERE SA.Student_ID = @St_ID
+      AND SA.Exam_ID = @Exam_ID;
 
     -- Calculate the percentage
-    SET @Percentage = (@obtainedDegree / @totalDegree) * 100;
+    IF @totalDegree > 0
+        SET @Percentage = (@obtainedDegree / @totalDegree) * 100;
+    ELSE
+        SET @Percentage = 0; -- Handle division by zero scenario
 
     -- Return the obtained degree, total degree, and percentage
     SELECT @obtainedDegree AS StudentDegree, @totalDegree AS TotalDegree, @Percentage AS Percentage;
@@ -1624,13 +1664,13 @@ BEGIN
     IF @Percentage < 60
     BEGIN
         -- Find or create a corrective exam
-        SELECT @CorrectiveExamID = ExamID
-        FROM Exams
-        WHERE CourseID = (SELECT CourseID FROM Exams WHERE ExamID = @examId)
-          AND ExamType = 'Corrective'
-          AND IntakeID = (SELECT IntakeID FROM Exams WHERE ExamID = @examId)
-          AND BranchID = (SELECT BranchID FROM Exams WHERE ExamID = @examId)
-          AND TrackID = (SELECT TrackID FROM Exams WHERE ExamID = @examId);
+        SELECT @CorrectiveExamID = Exam_ID
+        FROM Instructors.Exam
+        WHERE Course_ID = (SELECT Course_ID FROM Instructors.Exam WHERE Exam_ID = @Exam_ID)
+          AND Exam_Type = 'Corrective'
+          AND [Intake] = (SELECT [Intake] FROM Instructors.Exam WHERE Exam_ID = @Exam_ID)
+          AND Branch_ID = (SELECT Branch_ID FROM Instructors.Exam WHERE Exam_ID = @Exam_ID)
+          AND Track_ID = (SELECT Track_ID FROM Instructors.Exam WHERE Exam_ID = @Exam_ID);
 
         IF @CorrectiveExamID IS NULL
         BEGIN
@@ -1638,20 +1678,47 @@ BEGIN
             SET @StartTime = DATEADD(DAY, 7, GETDATE());
             SET @EndTime = DATEADD(HOUR, 2, @StartTime);
 
-            INSERT INTO Exams (CourseID, InstructorID, ExamType, IntakeID, BranchID, TrackID, StartTime, EndTime, TotalTime, AllowanceOptions)
-            SELECT CourseID, InstructorID, 'Corrective', IntakeID, BranchID, TrackID, @StartTime, @EndTime, 120, ''
-            FROM Exams
-            WHERE ExamID = @examId;
+            INSERT INTO Instructors.Exam (Course_ID, Instructor_ID, Exam_Type, [Intake], Branch_ID, Track_ID, Start_Time, End_Time, Total_Time, Allowance)
+            SELECT Course_ID, Instructor_ID, 'Corrective', [Intake], Branch_ID, Track_ID, @StartTime, @EndTime, 120, ''
+            FROM Instructors.Exam
+            WHERE Exam_ID = @Exam_ID;
 
             SET @CorrectiveExamID = SCOPE_IDENTITY(); -- Get the newly created ExamID
         END
 
         -- Assign the corrective exam to the student
-        INSERT INTO StudentExams (StudentID, ExamID, StartTime, EndTime)
-        VALUES (@studentId, @CorrectiveExamID, GETDATE(), DATEADD(DAY, 7, GETDATE()));
-        
-        RAISERROR ('Student ID %d scored less than 60%% in Exam ID %d and has been assigned a corrective exam.', 10, 1, @studentId, @examId);
+        INSERT INTO Students.StudentExams (Student_ID, Exam_ID, StartTime, EndTime)
+        VALUES (@St_ID, @CorrectiveExamID, GETDATE(), DATEADD(DAY, 7, GETDATE()));
+
+        RAISERROR ('Student ID %d scored less than 60%% in Exam ID %d and has been assigned a corrective exam.', 10, 1, @St_ID, @Exam_ID);
     END
 END;
 
+--Calling SP_calculateTotalDegree Procedure
+Exec Instructors.SP_calculateTotalDegree 1,1
 
+
+--This view shows Questions and answers and Student answers for this question
+create view Student_Questions_Answers
+with encryption
+as
+select s.St_ID,s.St_FName + ' ' + s.St_LName as 'Student Name', 
+iq.Q_ID ,iq.Q_Type ,iq.Q_Degree,iq.Q_Text, sa.Answer_ID, sa.Student_Answer,sa.ISCorrect
+from Instructors.Question iq inner join Students.StudentAnswer sa
+on iq.Q_ID = sa.Q_ID inner join Students.Student s
+on sa.Student_ID = s.St_ID
+
+--calling Student_Questions_Answers view
+select * from Student_Questions_Answers
+
+
+--This view shows Exams that students take part in
+create view Student_andExamsThat_Tooken
+with encryption
+as
+select s.St_ID,s.St_FName + ' ' + s.St_LName as 'Student Name',s.Dept_ID,s.Intake_ID,s.Branch_ID,s.Track_ID,se.Exam_ID,se.StartTime,se.EndTime
+from Students.Student s inner join Students.StudentExams se
+on se.Student_ID = s.St_ID 
+
+--calling Student_andExamsThat_Tooken view
+select * from Student_andExamsThat_Tooken

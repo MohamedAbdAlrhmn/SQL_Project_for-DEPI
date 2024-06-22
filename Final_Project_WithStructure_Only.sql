@@ -1031,7 +1031,234 @@ constraint Exam_fk foreign key (Exam_ID)
 references Instructors.Exam(Exam_Id)
 );
 
+------------------------------------------------------------------------------
+--Marina's part
 
+--creation of table Exams that Token by students
+create table StudentExams(
+Exam_ID int ,
+Student_ID int , 
+StartTime DATETIME,
+EndTime DATETIME
+constraint Exam_Student_pk Primary Key (Student_ID,Exam_Id),
+constraint Exam_Student_fk foreign key (Student_ID)
+references Students.Student(St_ID),
+constraint Exam_fk foreign key (Exam_ID)
+references Instructors.Exam(Exam_Id)
+);
+
+
+/*Instructor can select students that can do specific exam, 
+and define Exam date, start time and end time. 
+Students can see the exam and do it only on the specified tim*/
+
+	CREATE OR ALTER  PROCEDURE SP_StudentExam
+    @StudentID INT,
+    @ExamID INT,
+    @StartTime DATETIME,
+    @EndTime DATETIME
+AS
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Student WHERE St_ID = @StudentID)
+    BEGIN
+        RAISERROR('Error: StudentID does not exist.', 16, 1);
+        RETURN;
+    END
+    IF NOT EXISTS (SELECT 1 FROM Exam WHERE Exam_ID = @ExamID)
+    BEGIN
+        RAISERROR('Error: ExamID does not exist.', 16, 1);
+        RETURN;
+    END
+    BEGIN TRY
+        INSERT INTO StudentExams (Student_ID, Exam_ID, StartTime, EndTime)
+        VALUES (@StudentID, @ExamID, @StartTime, @EndTime);
+
+        PRINT 'Insert successful.'
+    END TRY
+
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000), @ErrorSeverity INT, @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END
+
+----CREATE TRIGGER trg_CheckExamTime
+CREATE TRIGGER trg_CheckExamTime
+ON StudentExams
+AFTER INSERT
+AS
+BEGIN
+    DECLARE @StudentID INT, @ExamID INT, @StartTime DATETIME, @EndTime DATETIME
+    SELECT @StudentID = i.Student_ID, @ExamID = i.Exam_ID, @StartTime = i.StartTime, @EndTime = i.EndTime
+    FROM inserted i
+
+    -- Retrieve the exam's start and end times
+    DECLARE @ExamStartTime DATETIME, @ExamEndTime DATETIME
+    SELECT @ExamStartTime =e.Start_Time , @ExamEndTime = e.End_Time
+    FROM Exam e
+    WHERE e.Exam_ID = @ExamID
+
+    -- Check if the student's start time is within the allowed exam time
+    IF @StartTime < @ExamStartTime
+    BEGIN
+        RAISERROR ('Error: Exam has not started yet.', 16, 1) -- State 1: Exam not started
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+
+    IF @StartTime > @ExamEndTime or @EndTime > @ExamEndTime
+    BEGIN
+        RAISERROR ('Error: Exam time has already ended.', 16, 2) -- State 2: Exam ended
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+
+END
+GO
+
+
+
+-- Creation Table StudentAnswer
+CREATE TABLE StudentAnswer (
+    Answer_ID INT primary key,
+    Student_ID INT,
+    Exam_ID INT,
+    Q_ID INT,
+    Student_Answer NVARCHAR(MAX),
+	IsCorrect int,
+    FOREIGN KEY (Student_ID) REFERENCES Students.Student(St_ID),
+    FOREIGN KEY (Exam_ID) REFERENCES Instructors.Exam(Exam_ID),
+    FOREIGN KEY (Q_ID) REFERENCES Instructors.Question(Q_ID)
+);
+GO
+
+
+--This procedure used for insert Students answers into table StudentAnswer
+CREATE or alter PROCEDURE Students.InsertStudentAnswer
+    @Answer_ID INT,
+    @StudentID INT,
+    @ExamID INT,
+    @Q_ID INT,
+    @Student_Answer NVARCHAR(MAX),
+	@IScorrect int
+AS
+BEGIN
+    BEGIN TRY
+        INSERT INTO Students.StudentAnswer (Answer_ID,Student_ID, Exam_ID, Q_ID, Student_Answer,IsCorrect)
+        VALUES (@Answer_ID,@StudentID, @ExamID, @Q_ID, @Student_Answer,@IScorrect);
+
+        PRINT 'Answer inserted successfully.'
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000), @ErrorSeverity INT, @ErrorState INT;
+        SELECT @ErrorMessage = ERROR_MESSAGE(), @ErrorSeverity = ERROR_SEVERITY(), @ErrorState = ERROR_STATE();
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState);
+    END CATCH
+END;
+GO
+
+
+
+
+--This procedure for calculate Student's Total Degree
+CREATE OR ALTER PROCEDURE Instructors.SP_calculateTotalDegree
+    @St_ID INT,
+    @Exam_ID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @totalDegree DECIMAL(5, 2);
+    DECLARE @obtainedDegree DECIMAL(5, 2);
+    DECLARE @Percentage DECIMAL(5, 2);
+    DECLARE @CorrectiveExamID INT;
+    DECLARE @StartTime DATETIME;
+    DECLARE @EndTime DATETIME;
+
+    -- Calculate the total degree for the exam, excluding corrective questions with zero degrees
+    SELECT @totalDegree = SUM(Q.[Q_Degree])
+    FROM Instructors.Exam_Question Q
+    WHERE Q.Exam_ID = @Exam_ID
+      AND NOT EXISTS (
+          SELECT 1
+          FROM Instructors.Exam E
+          WHERE E.Exam_ID = Q.Exam_ID
+            AND E.Exam_Type = 'Corrective'
+            AND Q.Q_Degree = 0
+      );
+
+    -- Calculate the obtained degree from the StudentAnswers table
+    SELECT @obtainedDegree = SUM(CASE WHEN SA.IsCorrect = 1 THEN Q.Q_Degree ELSE 0 END)
+    FROM Students.StudentAnswer SA
+    JOIN Instructors.Question Q ON SA.Q_ID = Q.Q_ID
+    WHERE SA.Student_ID = @St_ID
+      AND SA.Exam_ID = @Exam_ID;
+
+    -- Calculate the percentage
+    IF @totalDegree > 0
+        SET @Percentage = (@obtainedDegree / @totalDegree) * 100;
+    ELSE
+        SET @Percentage = 0; -- Handle division by zero scenario
+
+    -- Return the obtained degree, total degree, and percentage
+    SELECT @obtainedDegree AS StudentDegree, @totalDegree AS TotalDegree, @Percentage AS Percentage;
+
+    -- Check if a corrective exam is needed and assign if necessary
+    IF @Percentage < 60
+    BEGIN
+        -- Find or create a corrective exam
+        SELECT @CorrectiveExamID = Exam_ID
+        FROM Instructors.Exam
+        WHERE Course_ID = (SELECT Course_ID FROM Instructors.Exam WHERE Exam_ID = @Exam_ID)
+          AND Exam_Type = 'Corrective'
+          AND [Intake] = (SELECT [Intake] FROM Instructors.Exam WHERE Exam_ID = @Exam_ID)
+          AND Branch_ID = (SELECT Branch_ID FROM Instructors.Exam WHERE Exam_ID = @Exam_ID)
+          AND Track_ID = (SELECT Track_ID FROM Instructors.Exam WHERE Exam_ID = @Exam_ID);
+
+        IF @CorrectiveExamID IS NULL
+        BEGIN
+            -- Create a new corrective exam
+            SET @StartTime = DATEADD(DAY, 7, GETDATE());
+            SET @EndTime = DATEADD(HOUR, 2, @StartTime);
+
+            INSERT INTO Instructors.Exam (Course_ID, Instructor_ID, Exam_Type, [Intake], Branch_ID, Track_ID, Start_Time, End_Time, Total_Time, Allowance)
+            SELECT Course_ID, Instructor_ID, 'Corrective', [Intake], Branch_ID, Track_ID, @StartTime, @EndTime, 120, ''
+            FROM Instructors.Exam
+            WHERE Exam_ID = @Exam_ID;
+
+            SET @CorrectiveExamID = SCOPE_IDENTITY(); -- Get the newly created ExamID
+        END
+
+        -- Assign the corrective exam to the student
+        INSERT INTO Students.StudentExams (Student_ID, Exam_ID, StartTime, EndTime)
+        VALUES (@St_ID, @CorrectiveExamID, GETDATE(), DATEADD(DAY, 7, GETDATE()));
+
+        RAISERROR ('Student ID %d scored less than 60%% in Exam ID %d and has been assigned a corrective exam.', 10, 1, @St_ID, @Exam_ID);
+    END
+END;
+
+--This view shows Questions and answers and Student answers for this question
+create view Student_Questions_Answers
+with encryption
+as
+select s.St_ID,s.St_FName + ' ' + s.St_LName as 'Student Name', 
+iq.Q_ID ,iq.Q_Type ,iq.Q_Degree,iq.Q_Text, sa.Answer_ID, sa.Student_Answer,sa.ISCorrect
+from Instructors.Question iq inner join Students.StudentAnswer sa
+on iq.Q_ID = sa.Q_ID inner join Students.Student s
+on sa.Student_ID = s.St_ID
+
+select * from Student_Questions_Answers
+
+--This view shows Exams that students take part in
+create view Student_andExamsThat_Tooken
+with encryption
+as
+select s.St_ID,s.St_FName + ' ' + s.St_LName as 'Student Name',s.Dept_ID,s.Intake_ID,s.Branch_ID,s.Track_ID,se.Exam_ID,se.StartTime,se.EndTime
+from Students.Student s inner join Students.StudentExams se
+on se.Student_ID = s.St_ID 
+
+select * from Student_andExamsThat_Tooken
 
 
 ------------------------------------------------------------------------------------------

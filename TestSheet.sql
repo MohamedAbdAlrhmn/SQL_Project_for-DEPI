@@ -295,3 +295,52 @@ GO
 SELECT * FROM Instructors.SearchQuestionsByKeyword('stack');
 GO
 
+--Calling SP_StudentExam
+EXEC SP_StudentExam @StudentID = 1, @ExamID = 1, @StartTime = '2024-06-01 09:00:00', @EndTime = '2024-06-01 11:00:00';
+EXEC SP_StudentExam @StudentID = 2, @ExamID = 2, @StartTime = '2024-06-01 09:00:00', @EndTime = '2024-06-01 11:00:00';
+EXEC SP_StudentExam @StudentID = 3, @ExamID = 4, @StartTime = '2024-06-01 09:00:00', @EndTime = '2024-06-01 11:00:00';
+EXEC SP_StudentExam @StudentID = 4, @ExamID = 3, @StartTime = '2024-06-01 09:00:00', @EndTime = '2024-06-01 11:00:00';
+EXEC SP_StudentExam @StudentID = 5, @ExamID = 3, @StartTime = '2025-06-01 09:00:00', @EndTime = '2025-06-01 11:00:00';
+EXEC SP_StudentExam @StudentID = 6, @ExamID = 1, @StartTime = '2025-06-01 12:00:00', @EndTime = '2025-06-01 02:00:00';
+EXEC SP_StudentExam @StudentID = 7, @ExamID = 2, @StartTime = '2025-06-01 07:00:00', @EndTime = '2025-06-01 09:00:00';
+EXEC SP_StudentExam @StudentID = 8, @ExamID = 4, @StartTime = '2025-06-01 07:00:00', @EndTime = '2025-06-01 09:00:00';
+EXEC SP_StudentExam @StudentID = 9, @ExamID = 3, @StartTime = '2025-06-01 09:00:00', @EndTime = '2025-06-01 11:00:00';
+EXEC SP_StudentExam @StudentID = 10, @ExamID = 2, @StartTime = '2025-06-01 09:00:00', @EndTime = '2025-06-01 11:00:00';
+
+
+--calling InsertStudentAnswer Procedure
+
+
+-- Inserting answers for Student 1 in Exam 1
+EXEC Students.InsertStudentAnswer @Answer_ID = 1, @StudentID = 1, @ExamID = 1, @Q_ID = 1, @Student_Answer = 'A database structured to recognize relations among stored items of information',@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 2, @StudentID = 1, @ExamID = 1, @Q_ID = 2, @Student_Answer = 'A unique identifier for a database record',@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 3, @StudentID = 1, @ExamID = 1, @Q_ID = 3, @Student_Answer = 'A standard language for accessing and manipulating databases',@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 4, @StudentID = 1, @ExamID = 1, @Q_ID = 4, @Student_Answer = 'False',@IScorrect =  0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 5, @StudentID = 1, @ExamID = 1, @Q_ID = 5, @Student_Answer = 'False',@IScorrect =  0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 6, @StudentID = 1, @ExamID = 1, @Q_ID = 6, @Student_Answer = 'True',@IScorrect =  0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 7, @StudentID = 1, @ExamID = 1, @Q_ID = 7, @Student_Answer = 'A primary key uniquely identifies each record in a database table, ensuring data integrity and enabling efficient access.',@IScorrect = 1 ;
+EXEC Students.InsertStudentAnswer @Answer_ID = 8, @StudentID = 1, @ExamID = 1, @Q_ID = 8, @Student_Answer = 'Relational databases support ACID properties, data integrity, and provide powerful querying capabilities with SQL.', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 9, @StudentID = 1, @ExamID = 1, @Q_ID = 9, @Student_Answer = 'An SQL query typically includes a SELECT clause to specify the columns, a FROM clause to specify the tables, and optionally WHERE, GROUP BY, HAVING, and ORDER BY clauses to filter, group, and sort the data.', @IScorrect = 1;
+
+-- Inserting answers for Student 2 in Exam 2
+EXEC Students.InsertStudentAnswer @Answer_ID = 10, @StudentID = 2, @ExamID = 2, @Q_ID = 10, @Student_Answer = 'A linear data structure that follows the LIFO principle', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 11, @StudentID = 2, @ExamID = 2, @Q_ID = 11, @Student_Answer = 'A linear data structure that follows the FIFO principle', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 12, @StudentID = 2, @ExamID = 2, @Q_ID = 12, @Student_Answer = 'A tree data structure in which each node has at most two children', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 13, @StudentID = 2, @ExamID = 2, @Q_ID = 13, @Student_Answer = 'False', @IScorrect = 0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 14, @StudentID = 2, @ExamID = 2, @Q_ID = 14, @Student_Answer = 'True', @IScorrect = 0;
+EXEC Students.InsertStudentAnswer @Answer_ID = 15, @StudentID = 2, @ExamID = 2, @Q_ID = 15, @Student_Answer = 'True', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 16, @StudentID = 2, @ExamID = 2, @Q_ID = 16, @Student_Answer = 'A stack follows LIFO, while a queue follows FIFO.' ,@IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 17, @StudentID = 2, @ExamID = 2, @Q_ID = 17, @Student_Answer = 'Each node has at most two children, left and right.', @IScorrect = 1;
+EXEC Students.InsertStudentAnswer @Answer_ID = 18, @StudentID = 2, @ExamID = 2, @Q_ID = 18, @Student_Answer = 'Function call management, expression evaluation, backtracking, etc.', @IScorrect = 1;
+
+
+--Calling SP_calculateTotalDegree Procedure
+Exec Instructors.SP_calculateTotalDegree 1,1
+
+
+--calling Student_Questions_Answers view
+select * from Student_Questions_Answers
+
+
+--calling Student_andExamsThat_Tooken view
+select * from Student_andExamsThat_Tooken
